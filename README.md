@@ -144,3 +144,84 @@ Content-Type: application/json
   "created_at": "2026-06-14T21:00:00"
 }
 ```
+#### Desativar Usuário (soft delete)
+```
+DELETE /users/1/deactivate
+Authorization: Bearer <token>
+```
+```
+204 No Content
+```
+### Tarefas
+#### Criar Tarefa
+```
+POST /tasks
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "title": "Implementar autenticação",
+  "description": "Implementar JWT na API",
+  "due_date": "2026-07-01T10:00:00",
+  "status_id": 1,
+  "assigned_to": 1
+}
+```
+```
+{
+  "id": 1,
+  "title": "Implementar autenticação",
+  "description": "Implementar JWT na API",
+  "due_date": "2026-07-01T10:00:00",
+  "status_id": 1,
+  "calendar_event_id": "8fndu9iabeg45l3cbai3vtfsrk",
+  "owner_id": 1,
+  "assigned_to": 1,
+  "created_at": "2026-06-14T21:00:00"
+}
+```
+#### Listar Tarefas com Filtros
+```
+GET /tasks?status_id=1&assigned_to=1
+Authorization: Bearer <token>
+```
+### Comentários
+#### Criar Comentário
+```
+POST /tasks/1/comments
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "content": "Tarefa concluída com sucesso!"
+}
+```
+```
+{
+  "id": 1,
+  "content": "Tarefa concluída com sucesso!",
+  "task_id": 1,
+  "user_id": 1,
+  "created_at": "2026-06-14T21:00:00"
+}
+```
+### Google Calendar
+#### Autorizar Integração
+Acessar diretamente no navegador, subindo `{user_id}` pelo ID do usuário autenticado:
+```
+http://localhost:8000/auth/google/authorize?user_id={user_id}
+```
+Após a autorização, todas as tarefas criadas com `due_date` serão automaticamente sincronizadas
+com o Google Calendar do usuário.
+
+# Sistema de Permissões
+
+| Endpoint                         | Admin                       | User                       | Guest |
+|----------------------------------|-----------------------------|----------------------------|-------|
+| `POST /tasks`                    | ✅ Qualquer `assigned_to`   | ✅ Apenas para si mesmo    | ❌ |
+| `PUT /tasks/{id}`                | ✅ Qualquer tarefa          | ✅ Apenas suas tarefas     | ❌ |
+| `DELETE /tasks/{id}`             | ✅ Qualquer tarefa          | ✅ Apenas suas tarefas     | ❌ |
+| `GET /tasks`                     | ✅                          | ✅                         | ✅ |
+| `POST /tasks/{id}/comments`      | ✅                          | ✅                         | ❌ |
+| `DELETE /tasks/{id}/comments/{id}` | ✅ Qualquer comentário    | ✅ Apenas seus comentários | ❌ |
+| `GET /tasks/{id}/comments`       | ✅                          | ✅                         | ✅ |
