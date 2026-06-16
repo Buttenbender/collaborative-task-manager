@@ -1,0 +1,146 @@
+# Collaborative Task Manager
+## Autores
+- João Büttenbender
+- Eduardo Razera
+- Diogo Belotto
+## Visão Geral
+### Objetivo do Sistema
+O Collaborative Task Manager é uma API RESTful desenvolvida para o gerenciamento colaborativo
+de tarefas entre usuários. O sistema permite que equipes criem, editem, atribuam e acompanhem
+tarefas de forma estruturada, oferecendo funcionalidades complementares como controle de permissões
+por papéis, comentários em tarefas e integração com o Google Calendar.
+### Contexto de Uso
+A API destina-se a times e equipes que necessitam de uma solução centralizada para organização
+e acompanhamento de tarefas. Por meio de requisições HTTP, clientes externos - como aplicações
+web, mobile ou ferramentas de integração - podem interagir com o sistema para:
+
+- Gerenciar usuários e seus perfis com controle de acesso por papéis (Administrador, Usuário e Convidado)
+- Criar e atribuir tarefas com datas, responsáveis e status de acompanhamento
+- Controlar o ciclo de vida das tarefas (pendente, em andamento, concluida)
+- Registrar comentários vinculados a tarefas específicas
+- Sincronizar tarefas com o Google Calendar por meio de integração OAuth 2.0
+- Aplicar restrições de acesso de acordo com o papel do usuário no sistema
+
+Toda a comunicação com a API é protegida por autenticação via token JWT, garantindo que apenas
+usuários autenticados possam realizar operações.
+### Instruções de Instalação
+#### Pré-requisitos
+- Python 3.11+
+- Docker Desktop
+- Git
+#### Instalação com Docker
+1. Clonar o repositório
+```
+git clone https://github.com/Buttenbender/collaborative-task-manager.git
+cd collaborative-task-manager
+```
+2. Configurar as variáveis de ambiente
+
+Copie o arquivo `.env.example` e renomeie para `.env`, preenchendo os valores:
+```
+cp .env.example .env
+```
+```
+DATABASE_URL=mysql+pymysql://root:SUA_SENHA@db:3306/collaborative_task_manager
+SECRET_KEY=SUA_CHAVE_SECRETA
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+MYSQL_ROOT_PASSWORD=SUA_SENHA
+MYSQL_DATABASE=collaborative_task_manager
+GOOGLE_CLIENT_ID=SEU_CLIENT_ID
+GOOGLE_CLIENT_SECRET=SEU_CLIENT_SECRET
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+```
+3. Subir os containers
+```
+docker-compose up --build
+```
+4. Inserir os dados iniciais
+```
+docker exec -it collaborative_task_manager_db mysql -u root -p
+```
+Execute os seguintes comandos SQL:
+```
+USE collaborative_task_manager;
+
+INSERT INTO roles (name) VALUES ('admin'), ('user'), ('guest');
+INSERT INTO statuses (name) VALUES ('pending'), ('in_progress'), ('done');
+```
+5. Acessar a documentação da API
+
+Acesse `http://localhost:8000/docs` no navegador
+
+## Decisões Arquiteturais
+### Linguagem e Framework - Python com FastAPI
+O Python foi escolhido pela sua leitura fácil, grande quantidade de bibliotecas e ampla
+adoção no desenvolvimento de APIs. O FastAPI foi adotado como framework por ser moderno, 
+de alto desempenho e por gerar automaticamente a documentação iterativa via Swagger/OpenAPI.
+A integração nativa com Pydantic garante a validação de dados de entrada e saída da API.
+### Banco de Dados - MySQL
+O MySQL foi escolhido por ser um banco de dados relacional maduro, com suporte consolidado para
+integridade referencial, chaves estrangeiras e transações ACID. A natureza relacional do domínio - 
+onde usuários, tarefas, comentários, papéis e status possuem relacionamentos bem definidos - favorece
+o uso de um banco estruturado.
+### Arquitetura - Clean Architecture
+A Clean Architecture foi adotada por promover a separação clara de responsabilidades entre as camadas
+da aplicação, isolando regras de negócio de detalhes de infraestrutura. A organização segue quatro camadas:
+Domain (entidades e interfaces), Use Cases (casos de uso), Adapters (controllers e schemas) e Infraestructure 
+(repositórios, banco de dados e serviços externos).
+### Modelagem de Papéis e Status como Entidades
+Os papéis de usuários e os status de tarefas foram implementados como tabelas dedicadas (`roles` e `statuses`) 
+em vez de ENUMs, tornando o sistema mais extensível sem necessidade de alterações estruturais no banco.
+### Requisitos Complementares Escolhidos
+**Requisito 1 - Google Calendar:** Tarefas com data e hora são sincronizadas automaticamente como eventos do Google
+Calendar do usuário via OAuth 2.0 com PKCE, sendo removidas do calendário ao deletar a tarefa.
+
+**Requisito 5 - Permissões por Papéis:** Administradores têm acesso irrestrito; Usuários gerenciam apenas seus próprios
+recursos; Convidados têm acesso somente a leitura.
+
+**Requisito 6 - Comentários em Tarefas:** Implementação do sub-recurso `/tasks/{id}/comments`, permitindo a criação, 
+leitura e exclusão de comentários vinculados a tarefas e usuários.
+
+## Modelagem de Dados
+<img width="1012" height="782" alt="Collaborative Task Manager - Logic Model" src="https://github.com/user-attachments/assets/58805e5c-1e07-491c-bb10-f427c3eb4211" />
+
+## Fluxo de Requisição e Exemplos
+### Autenticação
+Todos os endpoints, exceto `POST /users` e `POST /auth/login`, requerem autenticação via token JWT. O token
+deve ser enviado no header `Authorization` no formato `Bearer <token>`.
+### Login
+```
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "joao@email.com",
+  "password": "Password123"
+}
+```
+```
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+### Usuários
+#### Criar Usuário
+```
+POST /users
+Content-Type: application/json
+
+{
+  "name": "João Büttenbender",
+  "email": "joao@email.com",
+  "password": "Password123",
+  "role_id": 1
+}
+```
+```
+{
+  "id": 1,
+  "name": "João Büttenbender",
+  "email": "joao@email.com",
+  "role_id": 1,
+  "created_at": "2026-06-14T21:00:00"
+}
+```
