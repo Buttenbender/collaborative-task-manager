@@ -214,7 +214,7 @@ http://localhost:8000/auth/google/authorize?user_id={user_id}
 Após a autorização, todas as tarefas criadas com `due_date` serão automaticamente sincronizadas
 com o Google Calendar do usuário.
 
-# Sistema de Permissões
+### Sistema de Permissões
 
 | Endpoint                         | Admin                       | User                       | Guest |
 |----------------------------------|-----------------------------|----------------------------|-------|
@@ -225,3 +225,53 @@ com o Google Calendar do usuário.
 | `POST /tasks/{id}/comments`      | ✅                          | ✅                         | ❌ |
 | `DELETE /tasks/{id}/comments/{id}` | ✅ Qualquer comentário    | ✅ Apenas seus comentários | ❌ |
 | `GET /tasks/{id}/comments`       | ✅                          | ✅                         | ✅ |
+
+## Configuração e Deploy
+### Variáveis de Ambiente
+O projeto utiliza um arquivo `.env` para configuração. As variáveis disponíveis são:
+
+| Variável                        | Descrição                                         |
+|---------------------------------|---------------------------------------------------|
+| `DATABASE_URL`                  | URL de conexão com o banco de dados               |
+| `SECRET_KEY`                    | Chave secreta para assinatura dos tokens JWT      |
+| `ALGORITHM`                     | Algoritmo de assinatura JWT (padrão: HS256)       |
+| `ACCESS_TOKEN_EXPIRE_MINUTES`   | Tempo de expiração do token em minutos            |
+| `MYSQL_ROOT_PASSWORD`           | Senha do MySQL (utilizada pelo Docker)            |
+| `MYSQL_DATABASE`                | Nome do banco de dados (utilizado pelo Docker)    |
+| `GOOGLE_CLIENT_ID`              | Client ID do projeto no Google Cloud Console      |
+| `GOOGLE_CLIENT_SECRET`          | Client Secret do projeto no Google Cloud Console  |
+| `GOOGLE_REDIRECT_URI`           | URI de direcionamento OAuth do Google             |
+
+Para gerar uma `SECRET_KEY` segura, execute:
+```
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+### Deploy com Docker
+O projeto está configurado para rodar em containers Docker com dois serviços: a API e o banco de dados 
+MySQL. O arquivo `docker-compose.yml` define a configuração completa dos serviços, incluindo healthcheck 
+para garantir que a API só suba após o banco estar pronto.
+
+Para subir o ambiente
+```
+docker-compose up --build
+```
+Para parar sem perder os dados:
+```
+docker-compose down
+```
+Para parar e apagar todos os dados:
+```
+docker-compose down -v
+```
+### Integração com o Google Calendar
+Para habilitar a integração com o Google Calendar, é necessário:
+1. Criar um projeto no [Google Cloud Console](https://console.cloud.google.com/)
+2. Ativar a **Google Calendar API**
+3. Criar credenciais OAuth 2.0 do tipo **Web Application**
+4. Adicionar `http://localhost:8000/auth/google/callback` como URI de redirecionamento autorizado
+5. Copiar o `client_id` e `client_secret` para o `.env`
+
+Cada usuário que deseja utilizar a integração deve autorizar o acesso acessando:
+```
+http://localhost:8000/auth/google/authorize?user_id={id_do_usuario}
+```
