@@ -275,3 +275,80 @@ Cada usuário que deseja utilizar a integração deve autorizar o acesso acessan
 ```
 http://localhost:8000/auth/google/authorize?user_id={id_do_usuario}
 ```
+## Estratégia de Testes e Métricas de Cobertura
+### Ferramentas Utilizadas
+| Ferramenta      | Versão  | Função                                         |
+|-----------------|---------|------------------------------------------------|
+| `pytest`        | 9.0.3   | Framework de Testes                            |
+| `pytest-cov`    | 7.1.0   | Medição de cobertura de código                 |
+| `unittest.mock` | -       | Criação de objetos mock para testes unitários  |
+| `httpx`         | -       | Clientes HTTP para testes de integração        |
+
+### Tipo de Testes
+#### Testes Unitários
+Os testes unitários verificam o comportamento isolado de cada caso de uso, sem dependência de banco de 
+dados ou serviços externos. Utilizam `MagicMock` para simular os repositórios, garantindo que apenas a 
+lógica de negócio seja testada.
+#### Testes de Integração
+Os testes de integração verificam o fluxo completo da API, desde a requisição HTTP até a persistência 
+dos dados. Utilizam o `TestClient` do FastAPI em conjunto com um banco de dados SQLite em memória, garantindo 
+isolamento entre os testes.
+### Casos de Testes Implementados
+#### Testes Unitários (`tests/unit/`):
+
+| Arquivo                     | Casos de Teste                                                         |
+|-----------------------------|------------------------------------------------------------------------|
+| `test_create_user.py`       | Criação com sucesso, e-mail duplicado, senha criptografada             |
+| `test_authenticate_user.py` | Login com sucesso, e-mail não encontrado, senha incorreta              |
+| `test_update_user.py`       | Atualização com sucesso, usuário não encontrado, e-mail duplicado      |
+| `test_delete_user.py`       | Deleção com sucesso, usuário não encontrado                            |
+| `test_soft_delete_user.py`  | Desativação com sucesso, usuário não encontrado                        |
+| `test_get_user.py`          | Busca por ID, usuário não encontrado, listagem completa                |
+| `test_create_task.py`       | Criação com sucesso, owner não encontrado, assignee não encontrado     |
+| `test_update_task.py`       | Atualização com sucesso, tarefa não encontrada, assignee não encontrado|
+| `test_delete_task.py`       | Deleção com sucesso, tarefa não encontrada                             |
+| `test_get_task.py`          | Busca por ID, tarefa não encontrada, listagem completa, filtos         |
+| `test_create_comment.py`    | Criação com sucesso, tarefa não encontrada                             |
+| `test_delete_comment.py`    | Deleção com sucesso, comentário não encontrado                         |
+| `test_get_comment.py`       | Listagem com sucesso, tarefa não encontrada                            |
+
+#### Teste de Integração (`tests/integration`):
+
+| Arquivo                   | Casos de Teste                                                                                                    |
+|---------------------------|-------------------------------------------------------------------------------------------------------------------|
+| `test_user_controller.py` | Criação com sucesso, e-mail duplicado, senha inválida, autenticação requerida, login com sucesso, senha incorreta |
+
+## Executar os Testes
+Para rodar todos os testes com relatório de cobertura:
+```
+pytest --cov=app tests/ -v
+```
+Para rodar apenas os testes unitários:
+```
+pytest tests/unit/ -v
+```
+Para rodar apenas os testes de integração:
+```
+pytest tests/integration/ -v
+```
+### Importante!
+Antes de rodar os testes, certifique-se de mudar no `.env` de:
+```
+DATABASE_URL=mysql+pymysql://root:SUA_SENHA@db:3306/collaborative_task_manager
+```
+Para:
+```
+DATABASE_URL=mysql+pymysql://root:SUA_SENHA@localhost:3306/collaborative_task_manager
+```
+## Métrica de Cobertura
+A cobertura atual do projeto é de 73%. As camadas com maior cobertura são os casos de uso e as entidades do domínio, 
+que concentram as regras de negócio do sistema.
+
+| Camada                         | Cobertura   |
+|--------------------------------|-------------|
+| Domain (Entidades)             | 100%        |
+| Use Cases                      | 96% média   |
+| Infrastructure (Modelos)       | 100%        |
+| Adapters (Controllers)         | ~55% média  |
+| Infrastructure (Repositórios)  | ~45% média  |
+| Total                          | 73%         |
